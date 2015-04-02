@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """
-sentry-kafka
+sentry-banno-javascript
 ==============
 
-An extension for Sentry which integrates with Apache Kafka. It will forward
-events to a Kafka instance for logging.
+An extension for Sentry which expands raw javascript stacktraces allowing
+for lighter clients.
 """
 from setuptools import setup, find_packages
 
