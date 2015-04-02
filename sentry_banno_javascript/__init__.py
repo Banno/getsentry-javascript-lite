@@ -9,8 +9,3 @@ try:
 except Exception, e:
     VERSION = 'unknown'
 
-from sentry.plugins import register
-
-from .plugin import BannoJavascriptPlugin
-
-register(BannoJavascriptPlugin)

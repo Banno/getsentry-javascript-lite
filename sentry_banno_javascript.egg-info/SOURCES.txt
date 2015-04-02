@@ -1,0 +1,10 @@
+setup.py
+sentry_banno_javascript/__init__.py
+sentry_banno_javascript/plugin.py
+sentry_banno_javascript.egg-info/PKG-INFO
+sentry_banno_javascript.egg-info/SOURCES.txt
+sentry_banno_javascript.egg-info/dependency_links.txt
+sentry_banno_javascript.egg-info/entry_points.txt
+sentry_banno_javascript.egg-info/not-zip-safe
+sentry_banno_javascript.egg-info/requires.txt
+sentry_banno_javascript.egg-info/top_level.txt

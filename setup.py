@@ -30,7 +30,7 @@ setup(
             'sentry_banno_javascript = sentry_banno_javascript ',
         ],
         'sentry.plugins': [
-            'banno_javascript = sentry_banno_javascript.plugin:BannoJavascriptPlugin',
+            'sentry_banno_javascript = sentry_banno_javascript.plugin:BannoJavascriptPlugin',
          ],
     },
     classifiers=[

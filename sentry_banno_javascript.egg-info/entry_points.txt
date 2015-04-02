@@ -1,0 +1,6 @@
+[sentry.apps]
+sentry_banno_javascript = sentry_banno_javascript
+
+[sentry.plugins]
+sentry_banno_javascript = sentry_banno_javascript.plugin:BannoJavascriptPlugin
+
