@@ -9,7 +9,6 @@ events to a Kafka instance for logging.
 from setuptools import setup, find_packages
 
 install_requires = [
-    'kafka-python>=0.9.2',
     'sentry>=7.4.0',
 ]
 

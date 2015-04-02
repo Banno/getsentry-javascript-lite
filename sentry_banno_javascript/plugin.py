@@ -25,8 +25,8 @@ class BannoJavascriptPlugin(JavascriptPlugin):
     version = VERSION
     description = "Preprocess Javascript Events and Obtain Sourcemaps from S3"
     resource_links = [
-        ('Bug Tracker', 'https://github.com/Banno/getsentry-banno-javascript/issues'),
-        ('Source', 'https://github.com/Banno/getsentry-banno-javascript'),
+            ('Bug Tracker', 'https://github.com/Banno/getsentry-banno-javascript/issues'),
+            ('Source', 'https://github.com/Banno/getsentry-banno-javascript'),
         ]
     slug = 'banno-javascript'
     title = 'Banno Javascript Event Preprocessor'
