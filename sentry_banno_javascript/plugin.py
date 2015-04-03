@@ -40,8 +40,10 @@ class BannoJavascriptPlugin(JavascriptPlugin):
 
 
 class BannoSourceProcessor(SourceProcessor):
-    chrome_ie_stacktrace_expr = re.compile(r'\s+at ')
-    firefox_safari_stacktrace_expr = re.compile(r'\S+\:\d+')
+    chrome_ie_stacktrace_expr = re.compile(r'^\s*at (.*?) ?\(?((?:file|https?|chrome-extension):.*?):(\d+)(?::(\d+))?\)?\s*$',
+        re.IGNORECASE)
+    firefox_safari_stacktrace_expr = re.compile(r'^\s*(.*?)(?:\((.*?)\))?@((?:file|https?|chrome).*?):(\d+)(?::(\d+))?\s*$',
+        re.IGNORECASE)
     whitespace_expr = re.compile(r'^\s+')
     location_parts_expr = re.compile(r'[\(\)\s]')
 
@@ -60,82 +62,63 @@ class BannoSourceProcessor(SourceProcessor):
         return super(BannoSourceProcessor, self).process(data)
 
     def format_raw_stacktrace(self, value):
-        try:
-            if re.search(BannoSourceProcessor.chrome_ie_stacktrace_expr, value):
-                return [self.format_chrome_ie_stacktrace(value)]
-            if re.search(BannoSourceProcessor.firefox_safari_stacktrace_expr, value):
-                return [self.format_firefox_safari_stacktrace(value)]
-        except:
-            return []
-
-    def format_chrome_ie_stacktrace(self, value):
         kwargs = {
             'frames': [],
             'frames_omitted': []
         }
 
         for frame in value.split('\n'):
-            if not BannoSourceProcessor.chrome_ie_stacktrace_expr.search(frame):
-                continue
-            tokens = re.split(r'\s+', re.sub(BannoSourceProcessor.whitespace_expr, '', frame))[1:]
-            location = self.extract_location(re.sub(BannoSourceProcessor.location_parts_expr, '', tokens.pop()))
-            functionName = tokens[0] if len(tokens) > 0 and tokens[0] != 'Anonymous' else None
-            if functionName == 'new':
-                functionName = (tokens[1] if len(tokens) > 2 and
-                                tokens[1] != 'Anonymous' else None)
+            if BannoSourceProcessor.chrome_ie_stacktrace_expr.search(frame):
+                kwargs['frames'].append(self.format_chrome_ie_frame(frame))
+            elif BannoSourceProcessor.firefox_safari_stacktrace_expr.search(frame):
+                kwargs['frames'].append(self.format_firefox_safari_frame(frame))
 
-            kwargs['frames'].append(
-                Frame.to_python({
-                    'filename': location[0],
-                    'lineno': location[1],
-                    'colno': location[2],
-                    'function': functionName,
-                    'in_app': True,
-                })
-            )
+        if len(kwargs['frames']) > 0:
+            return [Stacktrace(**kwargs)]
 
-        return Stacktrace(**kwargs)
+        return []
 
+    def format_chrome_ie_frame(self, frame):
+        tokens = BannoSourceProcessor.chrome_ie_stacktrace_expr.findall(frame)[0]
 
-    def format_firefox_safari_stacktrace(self, value):
-        kwargs = {
-            'frames': [],
-            'frames_omitted': []
+        frame = {
+            'filename': tokens[1],
+            'function': tokens[0] or '?',
+            'in_app': True,
         }
 
-        for frame in value.split('\n'):
-            if not BannoSourceProcessor.firefox_safari_stacktrace_expr.search(frame):
-                continue
-            tokens = frame.split('@')
-            location = self.extract_location(tokens.pop())
-            functionName = None
-            if len(tokens) > 0:
-                functionName = tokens[0]
-                tokens = tokens[1:]
-
-            kwargs['frames'].append(
-                Frame.to_python({
-                    'filename': location[0],
-                    'lineno': location[1],
-                    'colno': location[2],
-                    'function': functionName,
-                    'in_app': True,
-                })
-            )
-
-        return Stacktrace(**kwargs)
-
-    def extract_location(self, value):
-        locationParts = value.split(':')
-        lastNumber = locationParts.pop()
         try:
-            possibleNumber = float(locationParts[-1])
+            frame['lineno'] = int(float(tokens[2]))
         except:
-            possibleNumber = float('NaN')
+            pass
 
-        if not math.isnan(possibleNumber) and not math.isinf(possibleNumber):
-            lineNumber = locationParts.pop()
-            return (':'.join(locationParts), lineNumber, lastNumber)
+        try:
+            frame['colno'] = int(float(tokens[3]))
+        except:
+            pass
 
-        return (':'.join(locationParts), lastNumber, None)
+        return Frame.to_python(frame)
 
+    def format_firefox_safari_frame(self, frame):
+        tokens = BannoSourceProcessor.firefox_safari_stacktrace_expr.findall(frame)[0]
+
+        frame = {
+            'filename': tokens[2],
+            'function': tokens[0] or '?',
+            'in_app': True,
+        }
+
+        if tokens[1]:
+            frame['args'] = tokens[1].split(',')
+
+        try:
+            frame['lineno'] = int(float(tokens[3]))
+        except:
+            pass
+
+        try:
+            frame['colno'] = int(float(tokens[4]))
+        except:
+            pass
+
+        return Frame.to_python(frame)
