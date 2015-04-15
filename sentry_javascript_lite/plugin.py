@@ -1,45 +1,44 @@
 """
-sentry_banno_javascript.models
+sentry_javascript_lite.plugin
 ~~~~~~~~~~~~~~~~~~~~~
 """
 
-import math
 import re
 
 from django.conf import settings
 from sentry.lang.javascript.plugin import JavascriptPlugin
 from sentry.lang.javascript.processor import SourceProcessor
 from sentry.interfaces.stacktrace import (Frame, Stacktrace)
-from sentry_banno_javascript import VERSION
+from sentry_javascript_lite import VERSION
 
-def banno_preprocess_event(data):
+def javascript_lite_preprocess_event(data):
     if data.get('platform') != 'javascript':
         return
 
-    processor = BannoSourceProcessor()
+    processor = JavascriptLiteSourceProcessor()
     return processor.process(data)
 
-class BannoJavascriptPlugin(JavascriptPlugin):
+class JavascriptPlugin(JavascriptPlugin):
     author = 'Chad Killingsworth, Jack Henry and Associates'
-    author_url = 'https://github.com/Banno/getsentry-banno-javascript'
+    author_url = 'https://github.com/Banno/getsentry-javascript-lite'
     version = VERSION
-    description = "Preprocess Javascript Events and Obtain Sourcemaps from S3"
+    description = "Preprocess Raw Javascript Stacktraces"
     resource_links = [
-            ('Bug Tracker', 'https://github.com/Banno/getsentry-banno-javascript/issues'),
-            ('Source', 'https://github.com/Banno/getsentry-banno-javascript'),
+            ('Bug Tracker', 'https://github.com/Banno/getsentry-javascript-lite/issues'),
+            ('Source', 'https://github.com/Banno/getsentry-javascript-lite'),
         ]
-    slug = 'banno-javascript'
-    title = 'Banno Javascript Event Preprocessor'
+    slug = 'javascript-lite'
+    title = 'Javascript-lite Event Preprocessor'
     conf_title = title
-    conf_key = 'banno-javascript'
+    conf_key = 'javascript-lite'
 
     def get_event_preprocessors(self, **kwargs):
         if not settings.SENTRY_SCRAPE_JAVASCRIPT_CONTEXT:
             return []
-        return [banno_preprocess_event]
+        return [javascript_lite_preprocess_event]
 
 
-class BannoSourceProcessor(SourceProcessor):
+class JavascriptLiteSourceProcessor(SourceProcessor):
     chrome_ie_stacktrace_expr = re.compile(r'^\s*at (.*?) ?\(?((?:file|https?|chrome-extension):.*?):(\d+)(?::(\d+))?\)?\s*$',
         re.IGNORECASE)
     firefox_safari_stacktrace_expr = re.compile(r'^\s*(.*?)(?:\((.*?)\))?@((?:file|https?|chrome).*?):(\d+)(?::(\d+))?\s*$',
@@ -48,7 +47,7 @@ class BannoSourceProcessor(SourceProcessor):
     location_parts_expr = re.compile(r'[\(\)\s]')
 
     def get_stacktraces(self, data):
-        stacktraces = super(BannoSourceProcessor, self).get_stacktraces(data);
+        stacktraces = super(JavascriptLiteSourceProcessor, self).get_stacktraces(data);
 
         if (not stacktraces and 'extra' in data and
                 isinstance(data['extra'], dict) and 'rawstack' in data['extra']):
@@ -58,9 +57,6 @@ class BannoSourceProcessor(SourceProcessor):
 
         return stacktraces
 
-    def process(self, data):
-        return super(BannoSourceProcessor, self).process(data)
-
     def format_raw_stacktrace(self, value):
         kwargs = {
             'frames': [],
@@ -68,9 +64,9 @@ class BannoSourceProcessor(SourceProcessor):
         }
 
         for frame in value.split('\n'):
-            if BannoSourceProcessor.chrome_ie_stacktrace_expr.search(frame):
+            if JavascriptLiteSourceProcessor.chrome_ie_stacktrace_expr.search(frame):
                 kwargs['frames'].append(self.format_chrome_ie_frame(frame))
-            elif BannoSourceProcessor.firefox_safari_stacktrace_expr.search(frame):
+            elif JavascriptLiteSourceProcessor.firefox_safari_stacktrace_expr.search(frame):
                 kwargs['frames'].append(self.format_firefox_safari_frame(frame))
 
         if len(kwargs['frames']) > 0:
@@ -79,7 +75,7 @@ class BannoSourceProcessor(SourceProcessor):
         return []
 
     def format_chrome_ie_frame(self, frame):
-        tokens = BannoSourceProcessor.chrome_ie_stacktrace_expr.findall(frame)[0]
+        tokens = JavascriptLiteSourceProcessor.chrome_ie_stacktrace_expr.findall(frame)[0]
 
         frame = {
             'filename': tokens[1],
@@ -100,7 +96,7 @@ class BannoSourceProcessor(SourceProcessor):
         return Frame.to_python(frame)
 
     def format_firefox_safari_frame(self, frame):
-        tokens = BannoSourceProcessor.firefox_safari_stacktrace_expr.findall(frame)[0]
+        tokens = JavascriptLiteSourceProcessor.firefox_safari_stacktrace_expr.findall(frame)[0]
 
         frame = {
             'filename': tokens[2],
